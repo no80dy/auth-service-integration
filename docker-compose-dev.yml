@@ -21,7 +21,7 @@ services:
     ports:  # TODO: после отладки убрать порты
       - "6379:6379"
 
-  db:  # TODO: необходимо будет создавать две БД в рамках одного инстанса
+  db:
     build:
       context: movie_service
       dockerfile: Dockerfile-db
