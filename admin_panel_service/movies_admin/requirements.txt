@@ -1,0 +1,6 @@
+django==4.2
+flake8==6.1
+python-dotenv==1.0
+django-split-settings==1.2
+psycopg2-binary==2.9.7
+django-debug-toolbar==3.5

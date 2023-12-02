@@ -1,0 +1,4 @@
+FROM postgres:latest
+# COPY ./ddl/movies_database.sql ./ddl/movies_database.sql
+# COPY ./entrypoint-db.sh /docker-entrypoint-initdb.d/
+COPY ./init_db/init_db_dev.sql /docker-entrypoint-initdb.d/

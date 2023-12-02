@@ -1,0 +1,64 @@
+version: '3'
+services:
+  etl:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile-etl
+    env_file:
+      - ./etl/etl.env
+    depends_on:
+      - db
+      - elastic
+      - fastapi
+    volumes:
+      - ./etl:/app/etl
+
+  redis:
+    image: docker.io/bitnami/redis:7.2.1
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes  # для прода данный параметр удалить
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile-db
+    env_file:
+      - ./.env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  elastic:
+    image: elasticsearch:8.6.2
+    environment:
+      - "ES_JAVA_OPTS=-Xms200m -Xmx200m"
+      - "discovery.type=single-node"
+      - "xpack.security.enabled=false"  # для прода данный параметр удалить
+    ports:
+      - "9200:9200"  # необходимо для ETL в рамках разработки
+
+  fastapi:
+    build: ./src
+    env_file:
+      - ./fastapi.env
+    depends_on:
+      - elastic
+      - redis
+
+  nginx:
+    image: nginx:1.19.2
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+    depends_on:
+      - fastapi
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:

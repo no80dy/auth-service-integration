@@ -1,0 +1,37 @@
+# файл-конфигурация для запуска всей инфраструктуры с тестами.
+# TODO адаптировать этот компоуз под тесты: ссылки на докерфайлы, вольюмы/маунт-юинт файлы
+version: '3'
+services:
+
+  redis:
+    image: docker.io/bitnami/redis:7.2.1
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - "6379:6379"
+
+  elastic:
+    image: elasticsearch:8.6.2
+    environment:
+      - "ES_JAVA_OPTS=-Xms200m -Xmx200m"
+      - "discovery.type=single-node"
+      - "xpack.security.enabled=false"
+    ports:
+      - "9200:9200"
+
+  fastapi:
+    build: ../../../src
+    image: fastapi-image
+    depends_on:
+      - elastic
+      - redis
+    ports:
+      - "8000:8000"
+
+  tests:
+    image: fastapi-image
+    entrypoint: >
+      sh -c "python3 /app/tests/functional/utils/wait_for_es.py
+      && python3 /app/tests/functional/utils/wait_for_redis.py
+      && python3 -m pytest --setup-show -vv -W ignore::DeprecationWarning /app/tests/functional/src"

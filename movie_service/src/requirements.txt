@@ -1,0 +1,18 @@
+redis==4.4.2
+elasticsearch[async]==7.9.1
+fastapi==0.104.0
+pydantic==2.4.2
+pydantic_settings==2.0.3
+uvicorn==0.12.2
+uvloop==0.17.0 ; sys_platform != "win32" and implementation_name == "cpython"
+requests==2.31.0
+gunicorn
+httptools
+
+
+pytest
+pytest-asyncio
+aiohttp
+pydantic_settings
+
+backoff==2.2.1
