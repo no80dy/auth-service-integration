@@ -23,7 +23,7 @@ SET row_security = off;
 CREATE SCHEMA content;
 
 
-ALTER SCHEMA content OWNER TO app;
+ALTER SCHEMA content OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -42,12 +42,12 @@ CREATE TABLE content.film_work (
     creation_date date,
     rating numeric(4,2),
     type character varying(8) NOT NULL,
-    certificate character varying(512) NOT NULL,
+    certificate character varying(512),
     file_path character varying(100) NOT NULL
 );
 
 
-ALTER TABLE content.film_work OWNER TO app;
+ALTER TABLE content.film_work OWNER TO postgres;
 
 --
 -- Name: genre; Type: TABLE; Schema: content; Owner: app
@@ -62,7 +62,7 @@ CREATE TABLE content.genre (
 );
 
 
-ALTER TABLE content.genre OWNER TO app;
+ALTER TABLE content.genre OWNER TO postgres;
 
 --
 -- Name: genre_film_work; Type: TABLE; Schema: content; Owner: app
@@ -76,7 +76,7 @@ CREATE TABLE content.genre_film_work (
 );
 
 
-ALTER TABLE content.genre_film_work OWNER TO app;
+ALTER TABLE content.genre_film_work OWNER TO postgres;
 
 --
 -- Name: person; Type: TABLE; Schema: content; Owner: app
@@ -90,7 +90,7 @@ CREATE TABLE content.person (
 );
 
 
-ALTER TABLE content.person OWNER TO app;
+ALTER TABLE content.person OWNER TO postgres;
 
 --
 -- Name: person_film_work; Type: TABLE; Schema: content; Owner: app
@@ -105,7 +105,7 @@ CREATE TABLE content.person_film_work (
 );
 
 
-ALTER TABLE content.person_film_work OWNER TO app;
+ALTER TABLE content.person_film_work OWNER TO postgres;
 
 --
 -- Name: auth_group; Type: TABLE; Schema: public; Owner: app
@@ -117,7 +117,7 @@ CREATE TABLE public.auth_group (
 );
 
 
-ALTER TABLE public.auth_group OWNER TO app;
+ALTER TABLE public.auth_group OWNER TO postgres;
 
 --
 -- Name: auth_group_id_seq; Type: SEQUENCE; Schema: public; Owner: app
@@ -132,7 +132,7 @@ CREATE SEQUENCE public.auth_group_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_group_id_seq OWNER TO app;
+ALTER TABLE public.auth_group_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_group_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -152,7 +152,7 @@ CREATE TABLE public.auth_group_permissions (
 );
 
 
-ALTER TABLE public.auth_group_permissions OWNER TO app;
+ALTER TABLE public.auth_group_permissions OWNER TO postgres;
 
 --
 -- Name: auth_group_permissions_id_seq; Type: SEQUENCE; Schema: public; Owner: app
@@ -166,7 +166,7 @@ CREATE SEQUENCE public.auth_group_permissions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_group_permissions_id_seq OWNER TO app;
+ALTER TABLE public.auth_group_permissions_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_group_permissions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -187,7 +187,7 @@ CREATE TABLE public.auth_permission (
 );
 
 
-ALTER TABLE public.auth_permission OWNER TO app;
+ALTER TABLE public.auth_permission OWNER TO postgres;
 
 --
 -- Name: auth_permission_id_seq; Type: SEQUENCE; Schema: public; Owner: app
@@ -202,7 +202,7 @@ CREATE SEQUENCE public.auth_permission_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_permission_id_seq OWNER TO app;
+ALTER TABLE public.auth_permission_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_permission_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -230,7 +230,7 @@ CREATE TABLE public.auth_user (
 );
 
 
-ALTER TABLE public.auth_user OWNER TO app;
+ALTER TABLE public.auth_user OWNER TO postgres;
 
 --
 -- Name: auth_user_groups; Type: TABLE; Schema: public; Owner: app
@@ -243,7 +243,7 @@ CREATE TABLE public.auth_user_groups (
 );
 
 
-ALTER TABLE public.auth_user_groups OWNER TO app;
+ALTER TABLE public.auth_user_groups OWNER TO postgres;
 
 --
 -- Name: auth_user_groups_id_seq; Type: SEQUENCE; Schema: public; Owner: app
@@ -257,7 +257,7 @@ CREATE SEQUENCE public.auth_user_groups_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_user_groups_id_seq OWNER TO app;
+ALTER TABLE public.auth_user_groups_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_user_groups_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -279,7 +279,7 @@ CREATE SEQUENCE public.auth_user_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_user_id_seq OWNER TO app;
+ALTER TABLE public.auth_user_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -299,7 +299,7 @@ CREATE TABLE public.auth_user_user_permissions (
 );
 
 
-ALTER TABLE public.auth_user_user_permissions OWNER TO app;
+ALTER TABLE public.auth_user_user_permissions OWNER TO postgres;
 
 --
 -- Name: auth_user_user_permissions_id_seq; Type: SEQUENCE; Schema: public; Owner: app
@@ -313,7 +313,7 @@ CREATE SEQUENCE public.auth_user_user_permissions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_user_user_permissions_id_seq OWNER TO app;
+ALTER TABLE public.auth_user_user_permissions_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_user_user_permissions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -339,7 +339,7 @@ CREATE TABLE public.django_admin_log (
 );
 
 
-ALTER TABLE public.django_admin_log OWNER TO app;
+ALTER TABLE public.django_admin_log OWNER TO postgres;
 
 --
 -- Name: django_admin_log_id_seq; Type: SEQUENCE; Schema: public; Owner: app
@@ -354,7 +354,7 @@ CREATE SEQUENCE public.django_admin_log_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.django_admin_log_id_seq OWNER TO app;
+ALTER TABLE public.django_admin_log_id_seq OWNER TO postgres;
 
 --
 -- Name: django_admin_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -374,7 +374,7 @@ CREATE TABLE public.django_content_type (
 );
 
 
-ALTER TABLE public.django_content_type OWNER TO app;
+ALTER TABLE public.django_content_type OWNER TO postgres;
 
 --
 -- Name: django_content_type_id_seq; Type: SEQUENCE; Schema: public; Owner: app
@@ -389,7 +389,7 @@ CREATE SEQUENCE public.django_content_type_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.django_content_type_id_seq OWNER TO app;
+ALTER TABLE public.django_content_type_id_seq OWNER TO postgres;
 
 --
 -- Name: django_content_type_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -410,7 +410,7 @@ CREATE TABLE public.django_migrations (
 );
 
 
-ALTER TABLE public.django_migrations OWNER TO app;
+ALTER TABLE public.django_migrations OWNER TO postgres;
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE; Schema: public; Owner: app
@@ -424,7 +424,7 @@ CREATE SEQUENCE public.django_migrations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.django_migrations_id_seq OWNER TO app;
+ALTER TABLE public.django_migrations_id_seq OWNER TO postgres;
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: app
@@ -444,7 +444,7 @@ CREATE TABLE public.django_session (
 );
 
 
-ALTER TABLE public.django_session OWNER TO app;
+ALTER TABLE public.django_session OWNER TO postgres;
 
 --
 -- Name: auth_group id; Type: DEFAULT; Schema: public; Owner: app
@@ -14402,6 +14402,8 @@ ALTER TABLE ONLY public.django_admin_log
     ADD CONSTRAINT django_admin_log_user_id_c564eba6_fk_auth_user_id FOREIGN KEY (user_id) REFERENCES public.auth_user(id) DEFERRABLE INITIALLY DEFERRED;
 
 
+
+CREATE DATABASE users;
 --
 -- PostgreSQL database dump complete
 --

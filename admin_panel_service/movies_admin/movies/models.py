@@ -6,8 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 
 class TimeStampMixin(models.Model):
-    created_at = models.DateTimeField(_('created_at'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('updated_at'), auto_now=True)
+    created = models.DateTimeField(_('created_at'), auto_now_add=True)
+    modified = models.DateTimeField(_('updated_at'), auto_now=True)
 
     class Meta:
         abstract = True
@@ -83,7 +83,7 @@ class Filmwork(UUIDMixin, TimeStampMixin):
 class GenreFilmwork(UUIDMixin):
     film_work = models.ForeignKey('Filmwork', on_delete=models.CASCADE)
     genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "content\".\"genre_film_work"
@@ -104,7 +104,7 @@ class PersonFilmwork(UUIDMixin):
     film_work = models.ForeignKey('Filmwork', on_delete=models.CASCADE)
     person = models.ForeignKey('Person', on_delete=models.CASCADE)
     role = models.TextField(_('role'), choices=PersonRole.choices)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "content\".\"person_film_work"
