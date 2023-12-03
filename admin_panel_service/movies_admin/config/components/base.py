@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'movies.apps.MoviesConfig',
+    'users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
@@ -78,6 +79,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'users.CustomUser'
+AUTHENTICATION_BACKENDS = [
+    'users.auth.CustomBackend',
+]
 
 if DEBUG:
     INSTALLED_APPS.append('debug_toolbar')
