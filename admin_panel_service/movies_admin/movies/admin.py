@@ -15,8 +15,8 @@ class PersonFilmworkInline(admin.TabularInline):
 class PersonAdmin(admin.ModelAdmin):
     list_display = (
         'full_name',
-        'created_at',
-        'updated_at',
+        'created',
+        'modified',
     )
 
     search_fields = ('full_name', 'id', )
@@ -27,8 +27,8 @@ class GenreAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'description',
-        'created_at',
-        'updated_at',
+        'created',
+        'modified',
     )
 
     search_fields = ('name', 'description', 'id', )
@@ -47,8 +47,8 @@ class FilmworkAdmin(admin.ModelAdmin):
         'file_path',
         'creation_date',
         'rating',
-        'created_at',
-        'updated_at',
+        'created',
+        'modified',
     )
 
     list_filter = ('type', )
