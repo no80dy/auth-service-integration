@@ -54,17 +54,18 @@ services:
     ports:
       - "8002:8002"
 
-#  nginx:
-#    image: nginx:1.19.2
-#    volumes:
-#      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-#      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-#
-#    depends_on:
-#      - movie_service_fastapi
-#      - auth_service_fastapi
-#    ports:
-#      - "80:80"
+  nginx:
+    image: nginx:1.19.2
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+    depends_on:
+      - movie_service_fastapi
+      - auth_service_fastapi
+      - django
+    ports:
+      - "80:80"
 
 
 
@@ -72,10 +73,12 @@ services:
     build: admin_panel_service/movies_admin
     env_file:
       - admin_panel_service/.env
-    ports:
-      - "8001:8001"
+#    ports:
+#      - "8001:8001"
     depends_on:
       - db
+    volumes:
+      - staticfiles:/app/staticfiles
 
   auth_service_fastapi:
     build:
@@ -93,3 +96,4 @@ services:
 
 volumes:
   pgdata:
+  staticfiles:
