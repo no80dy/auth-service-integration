@@ -4,11 +4,8 @@ import json
 import jwt
 import requests
 from django.contrib.auth.backends import BaseBackend
-from django.contrib.auth import (
-    get_user_model,
-)
-from django.contrib.auth.models import Permission
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import get_user_model
+
 
 User = get_user_model()
 
@@ -21,7 +18,9 @@ class CustomBackend(BaseBackend):
         if response.status_code != http.HTTPStatus.OK:
             return None
         data = response.json()
+
         request.session['access_token'] = data['access_token']
+        request.session['refresh_token'] = data['refresh_token']
 
         decoded_token = jwt.decode(
             jwt=data['access_token'],

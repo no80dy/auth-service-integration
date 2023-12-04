@@ -15,6 +15,6 @@ def logout_view(request):
 
     response = requests.post(url, headers={'Authorization': f'Bearer {access_token}'})
     if response.status_code != http.HTTPStatus.OK:
-        return HttpResponse(status=response.status_code, content='Error connect to API')
+        return HttpResponse(status=response.status_code, content=response.json()['detail'])
     logout(request)
     return redirect('admin:login')
