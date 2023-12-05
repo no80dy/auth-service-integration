@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import lru_cache
 
 from fastapi import Depends
-from sqlalchemy import select, update, UUID, func
+from sqlalchemy import select, update, UUID, func, and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -185,6 +185,21 @@ class UserService:
         except SQLAlchemyError as e:
             logging.error(e)
             await self.db.rollback()
+
+    async def check_unexpected_refresh_token_freshness(self, user_id: str, user_agent: str):
+        now = datetime.now()
+        formatted_datetime = now.replace(microsecond=0)
+        result = (await self.db.execute(
+            select(RefreshSession).where(
+                and_(
+                    RefreshSession.user_id == user_id,
+                    RefreshSession.user_agent == user_agent,
+                    RefreshSession.expired_at < formatted_datetime,
+                    RefreshSession.is_active.is_(True)
+                )
+            )
+        )).scalars().first()
+        return result
 
     async def check_if_user_login(self, user_id: str, user_agent: str) -> bool:
         """Проверяет существования активной записи о входе пользователя с данного устройства."""

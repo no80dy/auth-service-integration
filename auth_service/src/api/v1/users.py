@@ -3,6 +3,7 @@ from http import HTTPStatus
 from typing import Annotated
 
 from async_fastapi_jwt_auth import AuthJWT
+from async_fastapi_jwt_auth.exceptions import FreshTokenRequired
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
@@ -120,6 +121,7 @@ async def create_user(
 async def change_password(
         user_change_password: UserChangePassword,
         user_service: UserService = Depends(get_user_service),
+        user_agent: Annotated[str | None, Header()] = None,
 ) -> UserInDB | HTTPException:
     user_dto = jsonable_encoder(user_change_password)
 
@@ -128,6 +130,7 @@ async def change_password(
         # при смене пароля разлогиниваем все устройства
         user = await user_service.get_user_by_username(user_dto.get('username'))
         await user_service.del_all_refresh_sessions_in_db(user)
+        await user_service.put_logout_history_in_db(str(user.id), user_agent)
 
         return updated_user
     else:
@@ -166,9 +169,14 @@ async def login(
     # проверяем, что пользователь уже не вошел с данного устройства
     active_user_login = await user_service.check_if_user_login(str(user.id), user_agent)
     if active_user_login:
-        return JSONResponse(
-            status_code=HTTPStatus.BAD_REQUEST,
-            content={'detail': 'Данный пользователь уже совершил вход с данного устройства'})
+        # Check if refresh token was expired
+        if await user_service.check_unexpected_refresh_token_freshness(str(user.id), user_agent):
+            await user_service.put_logout_history_in_db(str(user.id), user_agent)
+            await user_service.del_refresh_session_in_db(str(user.id), user_agent)
+        else:
+            return JSONResponse(
+                status_code=HTTPStatus.BAD_REQUEST,
+                content={'detail': 'Данный пользователь уже совершил вход с данного устройства'})
 
     user_claims = {
         'user_id': str(user.id),
@@ -238,7 +246,8 @@ async def logout(
 
     return JSONResponse(
         status_code=HTTPStatus.OK,
-        content={'detail': 'Выход осуществлен успешно'})
+        content={'detail': 'Выход осуществлен успешно'}
+    )
 
 
 @router.post(
