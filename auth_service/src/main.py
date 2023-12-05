@@ -1,15 +1,18 @@
 from contextlib import asynccontextmanager
 
 import uvicorn
-
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from async_fastapi_jwt_auth.exceptions import AuthJWTException
+from fastapi import FastAPI
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
+from opentelemetry import trace
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
 from api.v1 import users, groups, permissions
-
 from core.config import settings
-
 from db import storage
 from db.redis import RedisStorage
 
@@ -26,6 +29,23 @@ async def lifespan(app: FastAPI):
     await storage.nosql_storage.close()
 
 
+def configure_tracer() -> None:
+    trace.set_tracer_provider(TracerProvider())
+    trace.get_tracer_provider().add_span_processor(
+        BatchSpanProcessor(
+            JaegerExporter(
+                agent_host_name='jaeger',
+                agent_port=6831,
+            )
+        )
+    )
+    # Чтобы видеть трейсы в консоли
+    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+
+
+configure_tracer()
+
+
 app = FastAPI(
     description='Сервис по авторизации и аутентификации пользователей',
     version='1.0.0',
@@ -35,6 +55,19 @@ app = FastAPI(
     default_response_class=JSONResponse,
     lifespan=lifespan
 )
+
+
+FastAPIInstrumentor.instrument_app(app)
+
+
+@app.middleware('http')
+async def before_request(request: Request, call_next):
+    response = await call_next(request)
+    request_id = request.headers.get('X-Request-Id')
+    if not request_id:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={'detail': 'X-Request-Id is required'})
+    return response
+
 
 app.include_router(users.router, prefix='/auth/api/v1/users', tags=['users'])
 app.include_router(groups.router, prefix='/auth/api/v1/groups', tags=['groups'])
