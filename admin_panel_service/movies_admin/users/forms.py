@@ -49,22 +49,3 @@ class CustomPasswordChangeFormMyself(forms.Form):
                 code="password_incorrect",
             )
         return self.cleaned_data['old_password']
-
-# class CustomPasswordChangeForm(PasswordChangeForm):
-#     def clean_old_password(self):
-#         url = 'http://localhost:8000/api/v1/users/change_password'
-#         temp = super().cleaned_data['new_password1']
-#
-#         payload = {
-#             'username': self.user.username,
-#             'password': self.cleaned_data['old_password'],
-#             'repeat_old_password': self.cleaned_data['old_password'],
-#             'new_password': self.cleaned_data['new_password1']
-#         }
-#         response = requests.post(url, data=json.dumps(payload))
-#         if response.status_code != http.HTTPStatus.OK:
-#             raise ValidationError(
-#                 response.json(),
-#                 code="password_incorrect",
-#             )
-#         return self.cleaned_data['old_password']

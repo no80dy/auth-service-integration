@@ -6,6 +6,7 @@ import requests
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth import get_user_model
 
+from .models import Permission
 
 User = get_user_model()
 
@@ -30,6 +31,11 @@ class CustomBackend(BaseBackend):
         user, created = User.objects.get_or_create(id=decoded_token['user_id'])
         user.username = decoded_token.get('sub')
         user.is_superuser = '*.*' in decoded_token.get('permissions')
+        permissions = [
+            Permission.objects.get_or_create(name=permission_name)[0]
+            for permission_name in decoded_token.get('permissions')
+        ]
+        user.permissions.add(*permissions)
         user.save()
         return user
 

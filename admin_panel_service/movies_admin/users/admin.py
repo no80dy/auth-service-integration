@@ -14,17 +14,14 @@ class UserAdmin(admin.ModelAdmin):
                     'is_active',
                     'is_staff',
                     'is_superuser',
-                    'groups',
-                    'user_permissions',
                 )
             }
         ),
         (_('Important dates'), {'fields': ('last_login', )})
     )
     list_display = ('username', 'is_staff')
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups', )
+    list_filter = ('is_staff', 'is_superuser', 'is_active', )
     search_fields = ('username', )
     filter_horizontal = (
-        'groups',
-        'user_permissions'
+        'permissions',
     )

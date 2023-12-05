@@ -1,8 +1,8 @@
 import time
-from django.utils import timezone
 import uuid
 
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
@@ -30,7 +30,18 @@ class CustomUserManager(BaseUserManager):
         return user
 
 
-class AbstractCustomBaseUser(AbstractBaseUser, PermissionsMixin):
+class UserPermission(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    users = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    permissions = models.ForeignKey('Permission', on_delete=models.CASCADE)
+
+
+class Permission(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=256, unique=True)
+
+
+class AbstractCustomBaseUser(AbstractBaseUser):
     username = models.CharField(_('user name'), max_length=255, unique=True)
     is_staff = models.BooleanField(
         _('staff status'),
@@ -40,6 +51,11 @@ class AbstractCustomBaseUser(AbstractBaseUser, PermissionsMixin):
         _('is_active'),
         default=True
     )
+    is_superuser = models.BooleanField(
+        _("superuser status"),
+        default=False,
+    )
+    permissions = models.ManyToManyField(Permission, through='UserPermission')
 
     objects = CustomUserManager()
 
@@ -59,7 +75,9 @@ class CustomUser(AbstractCustomBaseUser):
         return f'{self.username}'
 
     def has_perm(self, perm, obj=None):
-        return True
+        if self.is_superuser:
+            return True
+        return self.permissions.filter(name=perm).exists()
 
     def has_module_perms(self, app_label):
         return True
