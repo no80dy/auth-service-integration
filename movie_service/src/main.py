@@ -34,17 +34,17 @@ app = FastAPI(
     # Конфигурируем название проекта. Оно будет отображаться в документации
     title=settings.project_name,
     # Адрес документации в красивом интерфейсе
-    docs_url='/api/openapi',
+    docs_url='/movie_service/api/openapi',
     # Адрес документации в формате OpenAPI
-    openapi_url='/api/openapi.json',
+    openapi_url='/movie_service/api/openapi.json',
     default_response_class=JSONResponse,
     lifespan=lifespan
 )
 
 
-app.include_router(films.router, prefix='/api/v1/films', tags=['films'])
-app.include_router(persons.router, prefix='/api/v1/persons', tags=['persons'])
-app.include_router(genres.router, prefix='/api/v1/genres', tags=['genres'])
+app.include_router(films.router, prefix='/movie_service/api/v1/films', tags=['films'])
+app.include_router(persons.router, prefix='/movie_service/api/v1/persons', tags=['persons'])
+app.include_router(genres.router, prefix='/movie_service/api/v1/genres', tags=['genres'])
 
 
 if __name__ == '__main__':

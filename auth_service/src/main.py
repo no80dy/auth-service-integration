@@ -30,15 +30,15 @@ app = FastAPI(
     description='Сервис по авторизации и аутентификации пользователей',
     version='1.0.0',
     title=settings.PROJECT_NAME,
-    docs_url='/api/openapi',
-    openapi_url='/api/openapi.json',
+    docs_url='/auth/api/openapi',
+    openapi_url='/auth/api/openapi.json',
     default_response_class=JSONResponse,
     lifespan=lifespan
 )
 
-app.include_router(users.router, prefix='/api/v1/users', tags=['users'])
-app.include_router(groups.router, prefix='/api/v1/groups', tags=['groups'])
-app.include_router(permissions.router, prefix='/api/v1/permissions', tags=['permissios'])
+app.include_router(users.router, prefix='/auth/api/v1/users', tags=['users'])
+app.include_router(groups.router, prefix='/auth/api/v1/groups', tags=['groups'])
+app.include_router(permissions.router, prefix='/auth/api/v1/permissions', tags=['permissios'])
 
 
 @app.exception_handler(AuthJWTException)
