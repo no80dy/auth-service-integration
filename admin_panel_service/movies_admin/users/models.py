@@ -99,11 +99,26 @@ class CustomUser(AbstractCustomBaseUser):
     def has_perm(self, perm, obj=None):
         if self.is_superuser:
             return True
-        return False
-        # return self.groups.filter(name=perm).exists()
+
+        user_groups = self.groups.prefetch_related('permissions').all()
+        user_permissions = [
+            permission
+            for group in user_groups
+            for permission in group.permissions.all()
+        ]
+        return perm in [permission.name for permission in user_permissions]
 
     def has_module_perms(self, app_label):
-        return True
+        if self.is_superuser:
+            return True
+
+        user_permissions_in_each_group = self.groups.all().prefetch_related('permissions')
+        user_permissions = [
+            permission.name
+            for group in user_permissions_in_each_group
+            for permission in group.permissions.all()
+        ]
+        return any(permission.startswith(f'{app_label}.') for permission in user_permissions)
 
     class Meta(AbstractCustomBaseUser.Meta):
         swappable = 'AUTH_BASE_USER'

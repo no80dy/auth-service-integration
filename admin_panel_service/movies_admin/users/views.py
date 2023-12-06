@@ -26,20 +26,6 @@ def logout_view(request):
     return redirect('admin:login')
 
 
-# class MyPasswordChangeView(PasswordChangeView):
-#     success_url = reverse_lazy("password_change_done")
-#
-#     def get(self, request, *args, **kwargs):
-#         return render(request, 'registration/password_change_form.html', {'form': form})
-#
-#     def form_valid(self, form):
-#         form.save()
-#         # do my thing with ldap here:
-#         print("OKIEDOKIE COWBOY")
-#
-#         update_session_auth_hash(self.request, form.user)
-#         return super().form_valid(form)
-
 def password_change(request):
     if request.method == 'POST':
         form = CustomPasswordChangeFormMyself(CustomUser.objects.get(pk=request.user.id), request.POST)
