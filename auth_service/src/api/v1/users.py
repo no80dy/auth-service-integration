@@ -180,7 +180,10 @@ async def login(
 
     user_claims = {
         'user_id': str(user.id),
-        'permissions': await user_service.get_user_permissions(user.id)
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email,
+        'groups_permissions': await user_service.get_user_groups_permissions(user.id)
     }
 
     # создаем пару access и refresh токенов
@@ -287,9 +290,13 @@ async def refresh(
 
     # создаем пару access и refresh токенов
     username = await Authorize.get_jwt_subject()
+    user = await user_service.get_user_by_user_id(user_id)
     user_claims = {
         'user_id': user_id,
-        'permissions': await user_service.get_user_permissions(user_id)
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email,
+        'groups_permissions': await user_service.get_user_groups_permissions(user_id)
     }
 
     access_token = await Authorize.create_access_token(

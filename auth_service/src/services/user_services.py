@@ -29,19 +29,38 @@ class UserService:
         self.token_handler = token_handler
         self.db = db
 
-    async def get_user_permissions(self, user_id: str) -> list[str]:
+    async def get_user_by_user_id(self, user_id) -> User:
+        user = (await self.db.execute(
+            select(User).where(User.id == user_id)
+        )).scalar()
+        return user
+
+    async def get_user_groups_permissions(self, user_id: str) -> list[dict]:
         user = (await self.db.execute(
             select(User).where(User.id == user_id)
         )).scalar()
 
-        permissions_in_groups = [group.permissions for group in user.groups]
-        permissions_names = []
-        for permissions_in_group in permissions_in_groups:
-            permissions_names.extend(
-                [permission_in_group.permission_name for permission_in_group in permissions_in_group]
+        groups_permissions = []
+        for group in user.groups:
+            groups_permissions.append(
+                {
+                    'group': group.group_name,
+                    'permissions': [
+                        permission.permission_name
+                        for permission in group.permissions
+                    ]
+                }
             )
+        return groups_permissions
 
-        return list(set(permissions_names))
+        # permissions_in_groups = [group.permissions for group in user.groups]
+        # permissions_names = []
+        # for permissions_in_group in permissions_in_groups:
+        #     permissions_names.extend(
+        #         [permission_in_group.permission_name for permission_in_group in permissions_in_group]
+        #     )
+        #
+        # return list(set(permissions_names))
 
     async def check_exist_user(self, user_dto):
         result = await self.db.execute(select(User).where(User.username == user_dto.get('username')))
