@@ -10,7 +10,6 @@ from sqlalchemy import select, update, UUID, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from werkzeug.security import generate_password_hash, check_password_hash
-from opentelemetry import trace
 
 from db.postgres import get_session
 from db.redis import RedisStorage
@@ -19,9 +18,6 @@ from models.entity import User, RefreshSession, UserLoginHistory, Permission, Gr
 from schemas.entity import RefreshToDb, UserLoginHistoryInDb, UserLogoutHistoryInDb, RefreshDelDb
 
 CACHE_EXPIRE_IN_SECONDS = 5 * 60  # 5 min
-
-
-tracer = trace.get_tracer(__name__)
 
 
 class UserService:
@@ -48,111 +44,101 @@ class UserService:
         return list(set(permissions_names))
 
     async def check_exist_user(self, user_dto):
-        with tracer.start_as_current_span('check_exist_user'):
-            result = await self.db.execute(select(User).where(User.username == user_dto.get('username')))
-            user = result.scalars().first()
+        result = await self.db.execute(select(User).where(User.username == user_dto.get('username')))
+        user = result.scalars().first()
 
         return bool(user)
 
     async def check_unique_email(self, user_dto):
-        with tracer.start_as_current_span('check_unique_email'):
-            result = await self.db.execute(select(User).where(User.email == user_dto.get('email')))
-            user = result.scalars().first()
+        result = await self.db.execute(select(User).where(User.email == user_dto.get('email')))
+        user = result.scalars().first()
 
         return True if not user else False
 
     async def create_user(self, user_dto):
-        with tracer.start_as_current_span('create_user'):
-            user = User(**user_dto)
-            self.db.add(user)
-            await self.db.commit()
-            await self.db.refresh(user)
+        user = User(**user_dto)
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
 
         return user
 
     async def update_password(self, user_dto):
-        with tracer.start_as_current_span('update_password'):
-            user = User(**user_dto)
-            if (
-                    not await self.check_repeated_password(user_dto.get('password'), user_dto.get('repeated_old_password')) or
-                    not await self._check_old_password(user_dto) or
-                    user_dto.get('password') == user_dto.get('new_password')  # старый и новый пароль должны отличаться
-            ):
-                return False
+        user = User(**user_dto)
+        if (
+                not await self.check_repeated_password(user_dto.get('password'), user_dto.get('repeated_old_password')) or
+                not await self._check_old_password(user_dto) or
+                user_dto.get('password') == user_dto.get('new_password')  # старый и новый пароль должны отличаться
+        ):
+            return False
 
-            new_password = generate_password_hash(user_dto.get('new_password'))
-            await self.db.execute(
-                update(User).where(User.username == user_dto.get('username')).values(password=new_password),
-            )
-            await self.db.commit()
+        new_password = generate_password_hash(user_dto.get('new_password'))
+        await self.db.execute(
+            update(User).where(User.username == user_dto.get('username')).values(password=new_password),
+        )
+        await self.db.commit()
 
         return user
 
-    @staticmethod
-    async def check_repeated_password(password, repeated_password):
-        with tracer.start_as_current_span('check_repeated_password'):
-            if not password == repeated_password:
-                return False
-            return True
+    async def check_repeated_password(self, password, repeated_password):
+        if not password == repeated_password:
+            return False
+        return True
 
     async def _check_old_password(self, user_dto):
-        with tracer.start_as_current_span('_check_old_password'):
-            result = await self.db.execute(select(User).where(User.username == user_dto.get('username')))
-            user = result.scalars().first()
-            old_pass_verified = check_password_hash(user.password, user_dto.get('password'))
+        result = await self.db.execute(select(User).where(User.username == user_dto.get('username')))
+        user = result.scalars().first()
+        old_pass_verified = check_password_hash(user.password, user_dto.get('password'))
 
         return True if old_pass_verified else False
 
     async def get_user_by_username(self, username: str) -> User | None:
         """Возвращает пользователя из базы данных по его username, если он есть."""
-        with tracer.start_as_current_span('get_user_by_username'):
-            try:
-                result = await self.db.execute(select(User).where(User.username == username))
-                user = result.scalars().first()
-                return user
-            except SQLAlchemyError as e:
-                logging.error(e)
+        try:
+            result = await self.db.execute(select(User).where(User.username == username))
+            user = result.scalars().first()
+            return user
+        except SQLAlchemyError as e:
+            logging.error(e)
 
     async def put_refresh_session_in_db(self, user_id: str, user_agent: str, decrypted_token: dict) -> None:
         """Записывает созданный refresh токен в базу данных."""
-        with tracer.start_as_current_span('put_refresh_session_in_db'):
-            session_dto = json.dumps({
-                'user_id': user_id,
-                'refresh_jti': decrypted_token['jti'],
-                'user_agent': user_agent,
-                'expired_at': datetime.fromtimestamp(decrypted_token['exp']).isoformat(),
-                'is_active': True
-            })
-            data = RefreshToDb.model_validate_json(session_dto)
-            try:
-                row = RefreshSession(**data.model_dump())
-                self.db.add(row)
-                await self.db.commit()
-                await self.db.refresh(row)
-            except SQLAlchemyError as e:
-                logging.error(e)
-                await self.db.rollback()
+        session_dto = json.dumps({
+            'user_id': user_id,
+            'refresh_jti': decrypted_token['jti'],
+            'user_agent': user_agent,
+            'expired_at': datetime.fromtimestamp(decrypted_token['exp']).isoformat(),
+            'is_active': True
+        })
+        data = RefreshToDb.model_validate_json(session_dto)
+        try:
+            row = RefreshSession(**data.model_dump())
+            self.db.add(row)
+            await self.db.commit()
+            await self.db.refresh(row)
+        except SQLAlchemyError as e:
+            logging.error(e)
+            await self.db.rollback()
 
     async def check_if_session_exist(self, user_id: str, user_agent: str) -> bool:
         """Проверяет существование сессии."""
-        with tracer.start_as_current_span('check_if_session_exist'):
-            session_dto = json.dumps({
-                'user_id': user_id,
-                'user_agent': user_agent,
-            })
-            data = RefreshDelDb.model_validate_json(session_dto)
-            try:
-                stmt = select(RefreshSession). \
-                    where(
-                    User.id == data.user_id,
-                        RefreshSession.user_agent == data.user_agent,
-                        RefreshSession.is_active.is_(True),
-                    )
-                result = await self.db.execute(stmt)
-                row = result.scalars().first()
-                return True if row else False
-            except SQLAlchemyError as e:
-                logging.error(e)
+        session_dto = json.dumps({
+            'user_id': user_id,
+            'user_agent': user_agent,
+        })
+        data = RefreshDelDb.model_validate_json(session_dto)
+        try:
+            stmt = select(RefreshSession). \
+                where(
+                User.id == data.user_id,
+                    RefreshSession.user_agent == data.user_agent,
+                    RefreshSession.is_active.is_(True),
+                )
+            result = await self.db.execute(stmt)
+            row = result.scalars().first()
+            return True if row else False
+        except SQLAlchemyError as e:
+            logging.error(e)
 
     async def del_refresh_session_in_db(self, user_id: str, user_agent: str) -> None:
         """Помечает refresh токен как удаленный в базе данных."""
