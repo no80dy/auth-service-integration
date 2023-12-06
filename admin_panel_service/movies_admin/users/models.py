@@ -30,15 +30,34 @@ class CustomUserManager(BaseUserManager):
         return user
 
 
-class UserPermission(models.Model):
+class UserGroup(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     users = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    groups = models.ForeignKey('Group', on_delete=models.CASCADE)
+
+
+class GroupPermission(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    groups = models.ForeignKey('Group', on_delete=models.CASCADE)
     permissions = models.ForeignKey('Permission', on_delete=models.CASCADE)
+
+
+class Group(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=256, unique=True)
+
+    permissions = models.ManyToManyField('Permission', through='GroupPermission')
+
+    def __str__(self):
+        return f'{self.name}'
 
 
 class Permission(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=256, unique=True)
+
+    def __str__(self):
+        return f'{self.name}'
 
 
 class AbstractCustomBaseUser(AbstractBaseUser):
@@ -55,7 +74,7 @@ class AbstractCustomBaseUser(AbstractBaseUser):
         _("superuser status"),
         default=False,
     )
-    permissions = models.ManyToManyField(Permission, through='UserPermission')
+    groups = models.ManyToManyField(Group, through='UserGroup')
 
     objects = CustomUserManager()
 
@@ -70,6 +89,9 @@ class AbstractCustomBaseUser(AbstractBaseUser):
 
 class CustomUser(AbstractCustomBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    first_name = models.CharField(max_length=256)
+    last_name = models.CharField(max_length=256)
+    email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
 
     def __str__(self):
         return f'{self.username}'
@@ -77,7 +99,8 @@ class CustomUser(AbstractCustomBaseUser):
     def has_perm(self, perm, obj=None):
         if self.is_superuser:
             return True
-        return self.permissions.filter(name=perm).exists()
+        return False
+        # return self.groups.filter(name=perm).exists()
 
     def has_module_perms(self, app_label):
         return True
