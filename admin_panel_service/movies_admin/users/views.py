@@ -11,10 +11,11 @@ from django.contrib.auth import update_session_auth_hash
 from django.urls import reverse_lazy
 from .models import CustomUser
 from .forms import CustomPasswordChangeFormMyself
+from .settings import settings
 
 
 def logout_view(request):
-    url = 'http://localhost:8000/api/v1/users/logout'
+    url = settings.LOGOUT_URL
     access_token = request.session.get('access_token', None)
     if not access_token:
         return HttpResponse('Unauthorized')

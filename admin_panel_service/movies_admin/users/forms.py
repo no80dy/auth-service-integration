@@ -9,6 +9,8 @@ from django.contrib.auth import authenticate, get_user_model, password_validatio
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
+from .settings import settings
+
 
 class CustomPasswordChangeFormMyself(forms.Form):
     old_password = forms.CharField(
@@ -35,7 +37,7 @@ class CustomPasswordChangeFormMyself(forms.Form):
         super().__init__(*args, **kwargs)
 
     def save(self, commit=True):
-        url = 'http://localhost:8000/api/v1/users/change_password'
+        url = settings.CHANGE_PASSWORD_URL
 
         payload = {
             'username': self.user.username,

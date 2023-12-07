@@ -7,13 +7,14 @@ from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth import get_user_model
 
 from .models import Permission, Group
+from .settings import settings
 
 User = get_user_model()
 
 
 class CustomBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None):
-        url = 'http://localhost:8000/api/v1/users/signin'
+        url = settings.LOG_IN_URL
         payload = {'username': username, 'password': password}
         response = requests.post(url, data=json.dumps(payload))
         if response.status_code != http.HTTPStatus.OK:
