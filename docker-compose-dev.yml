@@ -18,7 +18,7 @@ services:
     environment:
       - ALLOW_EMPTY_PASSWORD=yes  # для прода данный параметр удалить
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
-    ports:  # TODO: после отладки убрать порты
+    ports:
       - "6379:6379"
 
   db:
@@ -51,31 +51,28 @@ services:
       - elastic
       - redis
       - auth_service_fastapi
+
+  nginx:
+    image: nginx:1.19.2
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+    depends_on:
+      - movie_service_fastapi
+      - auth_service_fastapi
+      - django
     ports:
-      - "8002:8002"
-
-#  nginx:
-#    image: nginx:1.19.2
-#    volumes:
-#      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-#      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-#
-#    depends_on:
-#      - movie_service_fastapi
-#      - auth_service_fastapi
-#    ports:
-#      - "80:80"
-
-
+      - "80:80"
 
   django:
     build: admin_panel_service/movies_admin
     env_file:
       - admin_panel_service/.env
-    ports:
-      - "8001:8001"
     depends_on:
       - db
+    volumes:
+      - staticfiles:/app/staticfiles
 
   auth_service_fastapi:
     build:
@@ -88,8 +85,18 @@ services:
     depends_on:
       - db
       - redis
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
     ports:
-      - "8000:8000"
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
 
 volumes:
   pgdata:
+  staticfiles:
