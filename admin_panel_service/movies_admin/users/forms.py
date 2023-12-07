@@ -45,7 +45,7 @@ class CustomPasswordChangeFormMyself(forms.Form):
             'repeated_old_password': self.cleaned_data['old_password'],
             'new_password': self.cleaned_data['new_password1']
         }
-        response = requests.post(url, data=json.dumps(payload))
+        response = requests.post(url, data=json.dumps(payload), headers={'X-Request-Id': 'auth_service'})
         if response.status_code != http.HTTPStatus.OK:
             raise ValidationError(
                 response.json(),
@@ -56,7 +56,7 @@ class CustomPasswordChangeFormMyself(forms.Form):
 
 class CustomUserCreationForm(forms.ModelForm):
     def save(self, commit=True):
-        url = 'http://localhost:8000/api/v1/users/signup'
+        url = settings.CHANGE_PASSWORD_URL
         payload = {
             'username': self.cleaned_data['username'],
             'password': self.cleaned_data['password'],
@@ -65,7 +65,7 @@ class CustomUserCreationForm(forms.ModelForm):
             'last_name': self.cleaned_data['last_name'],
             'email': self.cleaned_data['email']
         }
-        response = requests.post(url, data=json.dumps(payload))
+        response = requests.post(url, data=json.dumps(payload), headers={'X-Request-Id': 'auth_service'})
         if response.status_code != http.HTTPStatus.CREATED:
             raise ValidationError(
                 response.json(),

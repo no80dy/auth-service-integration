@@ -16,7 +16,7 @@ class CustomBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None):
         url = settings.LOG_IN_URL
         payload = {'username': username, 'password': password}
-        response = requests.post(url, data=json.dumps(payload))
+        response = requests.post(url, data=json.dumps(payload), headers={'X-Request-Id': 'auth_service'})
         if response.status_code != http.HTTPStatus.OK:
             return None
         data = response.json()

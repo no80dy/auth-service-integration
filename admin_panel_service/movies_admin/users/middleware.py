@@ -7,6 +7,8 @@ from django.contrib.auth import logout
 from django.shortcuts import redirect
 from django.http import HttpResponse
 
+from .settings import settings
+
 
 class AccessTokenFreshnessMiddleware:
     def __init__(self, get_response):
@@ -18,8 +20,7 @@ class AccessTokenFreshnessMiddleware:
                 jwt.decode(request.session['access_token'], 'secret', algorithms=['HS256'])
             except jwt.ExpiredSignatureError:
                 refresh_token = request.session['refresh_token']
-                url = 'http://localhost:8000/api/v1/users/refresh-tokens'
-                response = requests.post(url, headers={'Authorization': f'Bearer {refresh_token}'})
+                response = requests.post(settings.LOGOUT_URL, headers={'Authorization': f'Bearer {refresh_token}', 'X-Request-Id': 'auth_service'})
                 request.session['access_token'] = response.json()['access_token']
                 request.session['refresh_token'] = response.json()['refresh_token']
         response = self.get_response(request)

@@ -19,8 +19,7 @@ def logout_view(request):
     access_token = request.session.get('access_token', None)
     if not access_token:
         return HttpResponse('Unauthorized')
-
-    response = requests.post(url, headers={'Authorization': f'Bearer {access_token}'})
+    response = requests.post(url, headers={'Authorization': f'Bearer {access_token}', 'X-Request-Id': 'auth_service'})
     if response.status_code != http.HTTPStatus.OK:
         return HttpResponse(status=response.status_code, content=response.json()['detail'])
     logout(request)
