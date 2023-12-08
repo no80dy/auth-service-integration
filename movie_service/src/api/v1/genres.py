@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 
 from services.genre import GenreService, get_genre_service
 from models.genre import Genres
+from .auth import security
 
 
 router = APIRouter()
@@ -22,6 +23,7 @@ DETAIL = 'genres not found'
     response_description='Информация по жанру'
 )
 async def genre_details(
+    user: Annotated[dict, Depends(security)],
     genre_id: Annotated[UUID, Path(description='Идентификатор жанра')],
     genre_service: GenreService = Depends(get_genre_service)
 ) -> Genres:
@@ -43,6 +45,7 @@ async def genre_details(
     response_description='Список жанров'
 )
 async def genres(
+    user: Annotated[dict, Depends(security)],
     genre_service: GenreService = Depends(get_genre_service)
 ) -> list[Genres]:
     genres = await genre_service.get_genres()
