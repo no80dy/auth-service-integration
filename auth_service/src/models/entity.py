@@ -2,9 +2,9 @@ import uuid
 
 from datetime import datetime
 
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, DateTime, String, ForeignKey, Table, Boolean
+from sqlalchemy import Column, DateTime, String, ForeignKey, Table, Boolean, UniqueConstraint
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -78,6 +78,7 @@ class User(Base):
 	updated_at = Column(DateTime, nullable=True)
 	refresh_sessions = relationship('RefreshSession', cascade="all, delete")
 	user_login_history = relationship('UserLoginHistory', cascade="all, delete")
+	# user_social_networks = relationship('UserSocialNetwork', cascade="all, delete")
 
 	groups = relationship(
 		'Group',
@@ -174,3 +175,45 @@ class UserLoginHistory(Base):
 
 	def __repr__(self) -> str:
 		return f'<User: {self.user_id} U-A: {self.user_agent} LogIn: {self.login_at} LogOut: {self.logout_at}>'
+
+
+class UserSocialNetwork(Base):
+	__tablename__ = 'users_socials'
+
+	id = Column(
+		UUID(as_uuid=True),
+		primary_key=True,
+		default=uuid.uuid4,
+		unique=True,
+		nullable=False
+	)
+	user_id = Column(UUID, ForeignKey('users.id'), nullable=False)
+	user = relationship('User', backref=backref('social_accounts', lazy=True))
+	social_id = Column(String(50), nullable=False)
+	social_name = Column(String(50), nullable=False)
+	social_username = Column(String(255), unique=True, nullable=False)
+	social_email = Column(String(50), unique=True, nullable=True)
+	created_at = Column(DateTime, default=datetime.utcnow)
+	updated_at = Column(DateTime, nullable=True)
+
+	__table_args__ = (UniqueConstraint('social_id', 'social_name', name='social_pk'),)
+
+	def __init__(
+		self,
+		user_id: UUID,
+		social_id: str,
+		social_name: str,
+		social_username: str,
+		social_email: str = '',
+		*args,
+		**kwargs,
+	) -> None:
+		self.social_id = social_id
+		self.social_name = social_name
+		self.social_username = social_username
+		self.social_email = social_email
+		self.user_id = user_id
+
+	def __repr__(self) -> str:
+		return f'<User: {self.user_id} SocialNetwork: {self.social_name}>'
+
