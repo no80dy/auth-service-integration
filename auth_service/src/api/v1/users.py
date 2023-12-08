@@ -245,7 +245,7 @@ async def logout(
 
 
 @router.post(
-    path='/refresh-tokens',
+    path='/refresh_tokens',
     status_code=HTTPStatus.OK,
     summary='Обновление пары access и refresh токенов',
     description='Получить новый access токен на основании валидного refresh токена',

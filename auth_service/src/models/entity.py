@@ -80,6 +80,9 @@ class User(Base):
 	user_login_history = relationship('UserLoginHistory', cascade="all, delete")
 	user_social_networks = relationship('UserSocialNetwork', lazy="selectin", cascade="all, delete")
 
+
+
+
 	groups = relationship(
 		'Group',
 		secondary=groups_users_table,
