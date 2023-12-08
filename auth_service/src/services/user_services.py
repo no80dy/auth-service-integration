@@ -7,7 +7,7 @@ from datetime import datetime
 from functools import lru_cache
 
 from fastapi import Depends
-from sqlalchemy import select, update, UUID, func, or_, and_
+from sqlalchemy import select, update, delete, UUID, func, or_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -377,6 +377,22 @@ class UserService:
         except SQLAlchemyError as e:
             logging.error(e)
             await self.db.rollback()
+
+    async def del_user_social(self, social_name: str, social_id: str) -> None:
+        """Отвязывает аккаунт социальной сети от аккаунта пользователя."""
+        if social_name == YANDEX_SOCIAL_NAME:
+            try:
+                stmt = delete(UserSocialNetwork).where(
+                    UserSocialNetwork.social_name == social_name,
+                    UserSocialNetwork.social_id == social_id
+                )
+                await self.db.execute(stmt)
+                await self.db.commit()
+            except SQLAlchemyError as e:
+                logging.error(e)
+                await self.db.rollback()
+        else:
+            raise ValueError(f'Unknown social name {social_name}')
 
 
 @lru_cache()

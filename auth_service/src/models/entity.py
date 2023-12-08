@@ -78,8 +78,7 @@ class User(Base):
 	updated_at = Column(DateTime, nullable=True)
 	refresh_sessions = relationship('RefreshSession', cascade="all, delete")
 	user_login_history = relationship('UserLoginHistory', cascade="all, delete")
-	user_social_networks = relationship('UserSocialNetwork', cascade="all, delete")
-	# user_social_networks: Mapped[list["UserSocialNetwork"]] = relationship(back_populates='user')
+	user_social_networks = relationship('UserSocialNetwork', lazy="selectin", cascade="all, delete")
 
 	groups = relationship(
 		'Group',
@@ -189,8 +188,6 @@ class UserSocialNetwork(Base):
 		nullable=False
 	)
 	user_id = Column(UUID, ForeignKey('users.id'), nullable=False)
-	# user = relationship('User', back_populates='user_social_networks')
-	# user: Mapped["User"] = relationship(back_populates="user_social_networks")
 	social_id = Column(String(50), nullable=False)
 	social_name = Column(String(50), nullable=False)
 	social_username = Column(String(255), unique=True, nullable=False)

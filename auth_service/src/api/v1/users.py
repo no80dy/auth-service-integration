@@ -330,9 +330,7 @@ async def get_history(
 
     return result
 
-
-# ################################################################################################
-
+# Настройки модуля Authlib
 auth_config = AuthServersSettings()
 oauth = OAuth()
 
@@ -398,7 +396,6 @@ async def auth_via_yandex(
         if user:
             await user_service.add_user_social(user.id, social_name, social_user)
         else:
-            # создать аккаунт
             user = await user_service.create_user_social(social_name, social_user)
             await user_service.add_user_social(user.id, social_name, social_user)
 
@@ -440,3 +437,35 @@ async def auth_via_yandex(
         'refresh_token': refresh_token
         }
     )
+
+@router.get(
+    path='/remove_social',
+    status_code=HTTPStatus.OK,
+    summary='Открепить аккаунт в соцсети от личного кабинета',
+    description='Открепить аккаунт в соцсети от личного кабинета',
+)
+async def remove_social_account(
+        request: Request,
+        social_name: str,
+        Authorize: AuthJWT = Depends(),
+        user_service: UserService = Depends(get_user_service),
+        authorization: str = Depends(security),
+):
+    """Удаление аккаунта в соцсети из базы данных."""
+    # проверяем наличие и валидность refresh токена
+    await Authorize.jwt_required()
+
+    decrypted_token = await Authorize.get_raw_jwt()
+    user_id = decrypted_token['user_id']
+    user = await user_service.get_user_by_id(user_id)
+
+    # удаляем сессию из таблицы users_socials
+    for social in user.user_social_networks:
+        if social.social_name == social_name:
+            await user_service.del_user_social(social_name, social.social_id)
+            break
+
+    return JSONResponse(
+        status_code=HTTPStatus.OK,
+        content={'detail': f'Аккаунт {social_name} откреплен от личного кабинета успешно'},
+        )
