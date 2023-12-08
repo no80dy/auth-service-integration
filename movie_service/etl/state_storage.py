@@ -28,6 +28,7 @@ class JsonFileStorage(BaseStorage):
 
     def __init__(self, file_path: str) -> None:
         self.file_path = os.path.normpath(file_path)
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
 
     def save_state(self, state: Dict[str, Any]) -> None:
         """Сохранить состояние в хранилище."""

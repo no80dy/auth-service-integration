@@ -114,3 +114,12 @@ class UserPaginatedHistoryInDb(BaseModel):
     previous: None | int
     next: None | int
     items: list[UserResponseHistoryInDb]
+
+
+class UserSocialNetworkInDb(BaseModel):
+    """Модель записи информации об аккаунте в социальной сети."""
+    user_id: UUID
+    social_id: str
+    social_name: str
+    social_username: str
+    social_email: str | None

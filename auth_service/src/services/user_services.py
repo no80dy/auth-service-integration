@@ -1,12 +1,13 @@
 import json
 import logging
 import uuid
-
+import string
+from secrets import choice as secrets_choice
 from datetime import datetime
 from functools import lru_cache
 
 from fastapi import Depends
-from sqlalchemy import select, update, UUID, func
+from sqlalchemy import select, update, delete, UUID, func, or_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,10 +15,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from db.postgres import get_session
 from db.redis import RedisStorage
 from db.storage import get_nosql_storage, TokenHandler
-from models.entity import User, RefreshSession, UserLoginHistory, Permission, Group
-from schemas.entity import RefreshToDb, UserLoginHistoryInDb, UserLogoutHistoryInDb, RefreshDelDb
+from models.entity import User, RefreshSession, UserLoginHistory, Permission, Group, UserSocialNetwork
+from schemas.entity import (
+    RefreshToDb,
+    UserLoginHistoryInDb,
+    UserLogoutHistoryInDb,
+    RefreshDelDb,
+    UserCreate,
+    UserSocialNetworkInDb
+)
 
 CACHE_EXPIRE_IN_SECONDS = 5 * 60  # 5 min
+YANDEX_SOCIAL_NAME = 'yandex'
 
 
 class UserService:
@@ -96,6 +105,24 @@ class UserService:
         """Возвращает пользователя из базы данных по его username, если он есть."""
         try:
             result = await self.db.execute(select(User).where(User.username == username))
+            user = result.scalars().first()
+            return user
+        except SQLAlchemyError as e:
+            logging.error(e)
+
+    async def get_user_by_email(self, email: str) -> User | None:
+        """Возвращает пользователя из базы данных по его email, если он есть."""
+        try:
+            result = await self.db.execute(select(User).where(User.email == email))
+            user = result.scalars().first()
+            return user
+        except SQLAlchemyError as e:
+            logging.error(e)
+
+    async def get_user_by_id(self, user_id: UUID) -> User | None:
+        """Возвращает пользователя из базы данных по его id, если он есть."""
+        try:
+            result = await self.db.execute(select(User).where(User.id == user_id))
             user = result.scalars().first()
             return user
         except SQLAlchemyError as e:
@@ -279,6 +306,93 @@ class UserService:
         offset_max = offset_min + page_size
 
         return offset_min, offset_max
+
+    async def check_if_social_exist(self, social_name: str, social_id: str) -> User | None:
+        """Проверяет существование аккаунта в базе данных на основе id пользователя в социальной сети."""
+        try:
+            stmt = select(UserSocialNetwork). \
+                where(and_(
+                    UserSocialNetwork.social_name == social_name,
+                    UserSocialNetwork.social_id == social_id,
+                ))
+            result = await self.db.execute(stmt)
+            account_exist = result.scalars().first()
+            if not account_exist:
+                return None
+            return await self.get_user_by_id(account_exist.user_id)
+        except SQLAlchemyError as e:
+            logging.error(e)
+
+    @staticmethod
+    def _generate_random_password() -> str:
+        alphabet = string.ascii_letters + string.digits
+        return ''.join(secrets_choice(alphabet) for _ in range(16))
+
+    async def create_user_social(self, social_name: str, social_user: dict) -> User:
+        """Создает аккаунт пользователя на основе данных социальной сети."""
+        random_password = self._generate_random_password()
+
+        if social_name == YANDEX_SOCIAL_NAME:
+            user_dto = json.dumps({
+                'username': social_user['login'],
+                'password': random_password,
+                'repeated_password': random_password,
+                'first_name': social_user['first_name'],
+                'last_name': social_user['last_name'],
+                'email': social_user['default_email'],
+            })
+        else:
+            raise ValueError(f'Unknown social name {social_name}')
+
+        data = UserCreate.model_validate_json(user_dto)
+        user = User(**data.model_dump())
+        try:
+            self.db.add(user)
+            await self.db.commit()
+            await self.db.refresh(user)
+        except SQLAlchemyError as e:
+            logging.error(e)
+            await self.db.rollback()
+        return user
+
+    async def add_user_social(self, user_id: UUID, social_name: str, social_user: dict) -> None:
+        """Привязывает аккаунт социальной сети к аккаунту пользователя."""
+        if social_name == YANDEX_SOCIAL_NAME:
+            social_user_dto = json.dumps({
+                'user_id': str(user_id),
+                'social_id': social_user['id'],
+                'social_name': social_name,
+                'social_username': social_user['login'],
+                'social_email': social_user['default_email'],
+            })
+        else:
+            raise ValueError(f'Unknown social name {social_name}')
+
+        data = UserSocialNetworkInDb.model_validate_json(social_user_dto)
+        try:
+            row = UserSocialNetwork(**data.model_dump())
+            self.db.add(row)
+            await self.db.commit()
+            await self.db.refresh(row)
+        except SQLAlchemyError as e:
+            logging.error(e)
+            await self.db.rollback()
+
+    async def del_user_social(self, social_name: str, social_id: str) -> None:
+        """Отвязывает аккаунт социальной сети от аккаунта пользователя."""
+        if social_name == YANDEX_SOCIAL_NAME:
+            try:
+                stmt = delete(UserSocialNetwork).where(
+                    UserSocialNetwork.social_name == social_name,
+                    UserSocialNetwork.social_id == social_id
+                )
+                await self.db.execute(stmt)
+                await self.db.commit()
+            except SQLAlchemyError as e:
+                logging.error(e)
+                await self.db.rollback()
+        else:
+            raise ValueError(f'Unknown social name {social_name}')
 
 
 @lru_cache()

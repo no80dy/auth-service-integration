@@ -5,6 +5,7 @@ from async_fastapi_jwt_auth.exceptions import AuthJWTException
 from fastapi import FastAPI
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
 from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -78,6 +79,9 @@ app.include_router(permissions.router, prefix='/auth/api/v1/permissions', tags=[
 def authjwt_exception_handler(request: Request, exc: AuthJWTException):
     """Exception handler for authjwt."""
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+
+
+app.add_middleware(SessionMiddleware, secret_key="secret-string")
 
 
 if __name__ == '__main__':
