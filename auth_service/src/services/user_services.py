@@ -119,6 +119,15 @@ class UserService:
         except SQLAlchemyError as e:
             logging.error(e)
 
+    async def get_user_by_id(self, user_id: UUID) -> User | None:
+        """Возвращает пользователя из базы данных по его id, если он есть."""
+        try:
+            result = await self.db.execute(select(User).where(User.id == user_id))
+            user = result.scalars().first()
+            return user
+        except SQLAlchemyError as e:
+            logging.error(e)
+
     async def put_refresh_session_in_db(self, user_id: str, user_agent: str, decrypted_token: dict) -> None:
         """Записывает созданный refresh токен в базу данных."""
         session_dto = json.dumps({
@@ -308,8 +317,9 @@ class UserService:
                 ))
             result = await self.db.execute(stmt)
             account_exist = result.scalars().first()
-
-            return account_exist.user if account_exist else None
+            if not account_exist:
+                return None
+            return await self.get_user_by_id(account_exist.user_id)
         except SQLAlchemyError as e:
             logging.error(e)
 

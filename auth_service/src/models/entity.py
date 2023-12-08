@@ -2,7 +2,7 @@ import uuid
 
 from datetime import datetime
 
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Mapped
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, DateTime, String, ForeignKey, Table, Boolean, UniqueConstraint
 from sqlalchemy.orm import declarative_base
@@ -78,7 +78,8 @@ class User(Base):
 	updated_at = Column(DateTime, nullable=True)
 	refresh_sessions = relationship('RefreshSession', cascade="all, delete")
 	user_login_history = relationship('UserLoginHistory', cascade="all, delete")
-	# user_social_networks = relationship('UserSocialNetwork', cascade="all, delete")
+	user_social_networks = relationship('UserSocialNetwork', cascade="all, delete")
+	# user_social_networks: Mapped[list["UserSocialNetwork"]] = relationship(back_populates='user')
 
 	groups = relationship(
 		'Group',
@@ -188,7 +189,8 @@ class UserSocialNetwork(Base):
 		nullable=False
 	)
 	user_id = Column(UUID, ForeignKey('users.id'), nullable=False)
-	user = relationship('User', backref=backref('social_accounts', lazy=True))
+	# user = relationship('User', back_populates='user_social_networks')
+	# user: Mapped["User"] = relationship(back_populates="user_social_networks")
 	social_id = Column(String(50), nullable=False)
 	social_name = Column(String(50), nullable=False)
 	social_username = Column(String(255), unique=True, nullable=False)

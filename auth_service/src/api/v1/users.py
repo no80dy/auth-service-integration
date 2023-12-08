@@ -395,8 +395,6 @@ async def auth_via_yandex(
     if not user:
         # Проверить в базе по почте
         user = await user_service.get_user_by_email(social_user['default_email'])
-        print(user)
-        logging.info(user, social_user)
         if user:
             await user_service.add_user_social(user.id, social_name, social_user)
         else:
@@ -442,11 +440,3 @@ async def auth_via_yandex(
         'refresh_token': refresh_token
         }
     )
-
-    # return JSONResponse(
-    #     status_code=HTTPStatus.OK,
-    #     content={
-    #         'user': user,
-    #         'token': token,
-    #     }
-    # )
