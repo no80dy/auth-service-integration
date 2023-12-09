@@ -8,6 +8,7 @@ from services.person import PersonService, get_person_service
 from services.film import FilmService, get_film_service
 from models.film import FilmShort
 from models.person import Person
+from .auth import security
 
 
 router = APIRouter()
@@ -24,6 +25,7 @@ DETAIL = 'persons not found'
     response_description='Список персон со списком фильмов и ролей, исполненных в них'
 )
 async def search_persons(
+    user: Annotated[dict, Depends(security)],
     query: Annotated[str, Query(description='Текст запроса для поиска')],
     page_size: Annotated[int, Query(description='Размер страницы', ge=1)] = 50,
     page_number: Annotated[int, Query(description='Номер страницы', ge=1)] = 1,
@@ -49,6 +51,7 @@ async def search_persons(
     response_description='Информация о персоне'
 )
 async def person_details(
+    user: Annotated[dict, Depends(security)],
     person_id: Annotated[UUID, Path(description='Идентификатор пользователя')],
     person_service: PersonService = Depends(get_person_service)
 ) -> Person:
@@ -70,6 +73,7 @@ async def person_details(
     response_description='Список фильмов, где участвовала конкретная персона'
 )
 async def person_films(
+    user: Annotated[dict, Depends(security)],
     person_id: Annotated[UUID, Path(description='Идентификатор пользователя')],
     person_service: PersonService = Depends(get_person_service),
     film_service: FilmService = Depends(get_film_service)

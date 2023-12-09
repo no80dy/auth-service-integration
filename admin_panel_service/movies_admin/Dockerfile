@@ -13,5 +13,6 @@ RUN pip install --upgrade pip \
 
 COPY . /app
 
-ENTRYPOINT [ "python3" ]
-CMD [ "manage.py", "runserver", "0.0.0.0:8000" ]
+RUN chmod +x django-entrypoint.sh
+
+ENTRYPOINT [ "./django-entrypoint.sh" ]
