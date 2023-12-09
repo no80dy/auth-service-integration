@@ -1,15 +1,18 @@
+import logging
 from uuid import UUID
 from http import HTTPStatus
 from typing import Annotated
 
+import httpx
 from async_fastapi_jwt_auth import AuthJWT
 from async_fastapi_jwt_auth.exceptions import FreshTokenRequired
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
-from fastapi import APIRouter, Depends, Header, HTTPException, Path, Body, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Body, Query, Request
+from authlib.integrations.starlette_client import OAuth
 
-from core.config import JWTSettings
+from core.config import JWTSettings, AuthServersSettings
 from schemas.entity import (
     UserSighIn,
     UserInDB,
@@ -251,7 +254,7 @@ async def logout(
 
 
 @router.post(
-    path='/refresh-tokens',
+    path='/refresh_tokens',
     status_code=HTTPStatus.OK,
     summary='Обновление пары access и refresh токенов',
     description='Получить новый access токен на основании валидного refresh токена',
@@ -336,3 +339,143 @@ async def get_history(
     }
 
     return result
+
+# Настройки модуля Authlib
+auth_config = AuthServersSettings()
+oauth = OAuth()
+
+oauth.register(
+    name='yandex',
+    client_id=auth_config.YANDEX_CLIENT_ID,
+    client_secret=auth_config.YANDEX_CLIENT_SECRET,
+    access_token_url='https://oauth.yandex.ru/token',
+    authorize_url='https://oauth.yandex.ru/authorize',
+    api_base_url='https://login.yandex.ru/',
+    client_kwargs={
+        'token_placement': 'header',
+        'token_endpoint_auth_method': 'client_secret_basic',
+        'scope': 'login:birthday login:email login:info',
+    }
+)
+
+
+@router.get(
+    path='/signin_yandex',
+    status_code=HTTPStatus.OK,
+    summary='Вход пользователя в аккаунт через аккаунт Яндекс',
+    description='На основании данных от Яндекс формирует пару access и refresh токенов',
+    response_description='Аутентификация пользователя через Яндекс аккаунт'
+)
+async def login_via_yandex(
+        request: Request,
+        user_agent: Annotated[str | None, Header()] = None,
+):
+    """Вход пользователя в аккаунт с помощью аккаунта Яндекс."""
+    if not user_agent:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail='Вы пытаетесь зайти с неизвестного устройства'
+        )
+    redirect_uri = request.url_for('auth_via_yandex')
+    return await oauth.yandex.authorize_redirect(request, redirect_uri)
+
+
+@router.get('/auth_yandex')
+async def auth_via_yandex(
+        request: Request,
+        Authorize: AuthJWT = Depends(),
+        user_service: UserService = Depends(get_user_service),
+        user_agent: Annotated[str | None, Header()] = None,
+):
+    token = await oauth.yandex.authorize_access_token(request)
+    try:
+        resp = await oauth.yandex.get('info', token=token, timeout=20.0)
+        resp.raise_for_status()
+        social_user = resp.json()
+    except httpx.ConnectTimeout as e:
+        logging.error(e)
+    logging.info('hey', social_user)
+    social_id = social_user['id']
+    social_name = 'yandex'
+
+    # Проверить заходил ли такой пользователь через данную социальную сеть
+    user = await user_service.check_if_social_exist(social_name, social_id)
+    if not user:
+        # Проверить в базе по почте
+        user = await user_service.get_user_by_email(social_user['default_email'])
+        if user:
+            await user_service.add_user_social(user.id, social_name, social_user)
+        else:
+            user = await user_service.create_user_social(social_name, social_user)
+            await user_service.add_user_social(user.id, social_name, social_user)
+
+    # проверяем, что пользователь уже не вошел с данного устройства
+    active_user_login = await user_service.check_if_user_login(str(user.id), user_agent)
+    if active_user_login:
+        return JSONResponse(
+            status_code=HTTPStatus.BAD_REQUEST,
+            content={'detail': 'Данный пользователь уже совершил вход с данного устройства'})
+
+    user_claims = {
+        'user_id': str(user.id),
+        'permissions': await user_service.get_user_permissions(user.id)
+    }
+
+    # создаем пару access и refresh токенов
+    access_token = await Authorize.create_access_token(
+        subject=user.username,
+        user_claims=user_claims
+    )
+    refresh_token = await Authorize.create_refresh_token(
+        subject=user.username,
+        user_claims=user_claims
+    )
+
+    # защита от превышения максимально возможного количества сессий
+    session_number = await user_service.count_refresh_sessions(str(user.id))
+    if session_number > MAX_SESSION_NUMBER:
+        await user_service.del_all_refresh_sessions_in_db(user)
+
+    decrypted_token = await Authorize.get_raw_jwt(refresh_token)
+    await user_service.put_refresh_session_in_db(str(user.id), user_agent, decrypted_token)
+
+    # записываем историю входа в аккаунт
+    await user_service.put_login_history_in_db(str(user.id), user_agent)
+
+    return JSONResponse(content={
+        'access_token': access_token,
+        'refresh_token': refresh_token
+        }
+    )
+
+@router.get(
+    path='/remove_social',
+    status_code=HTTPStatus.OK,
+    summary='Открепить аккаунт в соцсети от личного кабинета',
+    description='Открепить аккаунт в соцсети от личного кабинета',
+)
+async def remove_social_account(
+        request: Request,
+        social_name: str,
+        Authorize: AuthJWT = Depends(),
+        user_service: UserService = Depends(get_user_service),
+        authorization: str = Depends(security),
+):
+    """Удаление аккаунта в соцсети из базы данных."""
+    # проверяем наличие и валидность refresh токена
+    await Authorize.jwt_required()
+
+    decrypted_token = await Authorize.get_raw_jwt()
+    user_id = decrypted_token['user_id']
+    user = await user_service.get_user_by_id(user_id)
+
+    # удаляем сессию из таблицы users_socials
+    for social in user.user_social_networks:
+        if social.social_name == social_name:
+            await user_service.del_user_social(social_name, social.social_id)
+            break
+
+    return JSONResponse(
+        status_code=HTTPStatus.OK,
+        content={'detail': f'Аккаунт {social_name} откреплен от личного кабинета успешно'},
+        )
