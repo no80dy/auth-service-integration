@@ -7,7 +7,9 @@ from datetime import datetime
 from functools import lru_cache
 
 from fastapi import Depends
-from sqlalchemy import select, update, delete, UUID, func, or_, and_
+
+from sqlalchemy import select, update, UUID, func, and_, delete, UUID, or_
+
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -38,19 +40,29 @@ class UserService:
         self.token_handler = token_handler
         self.db = db
 
-    async def get_user_permissions(self, user_id: str) -> list[str]:
+    async def get_user_by_user_id(self, user_id) -> User:
+        user = (await self.db.execute(
+            select(User).where(User.id == user_id)
+        )).scalar()
+        return user
+
+    async def get_user_groups_permissions(self, user_id: str) -> list[dict]:
         user = (await self.db.execute(
             select(User).where(User.id == user_id)
         )).scalar()
 
-        permissions_in_groups = [group.permissions for group in user.groups]
-        permissions_names = []
-        for permissions_in_group in permissions_in_groups:
-            permissions_names.extend(
-                [permission_in_group.permission_name for permission_in_group in permissions_in_group]
+        groups_permissions = []
+        for group in user.groups:
+            groups_permissions.append(
+                {
+                    'group': group.group_name,
+                    'permissions': [
+                        permission.permission_name
+                        for permission in group.permissions
+                    ]
+                }
             )
-
-        return list(set(permissions_names))
+        return groups_permissions
 
     async def check_exist_user(self, user_dto):
         result = await self.db.execute(select(User).where(User.username == user_dto.get('username')))
@@ -213,6 +225,21 @@ class UserService:
             logging.error(e)
             await self.db.rollback()
 
+    async def check_unexpected_refresh_token_freshness(self, user_id: str, user_agent: str):
+        now = datetime.now()
+        formatted_datetime = now.replace(microsecond=0)
+        result = (await self.db.execute(
+            select(RefreshSession).where(
+                and_(
+                    RefreshSession.user_id == user_id,
+                    RefreshSession.user_agent == user_agent,
+                    RefreshSession.expired_at < formatted_datetime,
+                    RefreshSession.is_active.is_(True)
+                )
+            )
+        )).scalars().first()
+        return result
+
     async def check_if_user_login(self, user_id: str, user_agent: str) -> bool:
         """Проверяет существования активной записи о входе пользователя с данного устройства."""
         try:
@@ -259,7 +286,7 @@ class UserService:
                 RefreshSession.is_active.is_(True),
                 ))
             sessions = result.scalars().all()
-            return sessions.count() if len(sessions) > 0 else 0
+            return len(sessions)
         except SQLAlchemyError as e:
             logging.error(e)
 

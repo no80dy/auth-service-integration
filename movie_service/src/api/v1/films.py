@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from services.film import FilmService, get_film_service
 from models.film import Film, FilmShort
 
+from .auth import security
+
 
 router = APIRouter()
 
@@ -22,6 +24,7 @@ DETAIL = 'films not found'
 )
 async def search_film(
     query: Annotated[str, Query(description='Текст запроса для поиска')],
+    user: Annotated[dict, Depends(security)],
     page_size: Annotated[int, Query(description='Размер страницы', ge=1)] = 50,
     page_number: Annotated[int, Query(description='Номер страницы', ge=1)] = 1,
     film_service: FilmService = Depends(get_film_service)
@@ -47,6 +50,7 @@ async def search_film(
     response_description='Полная информация о кинопроизведении',
 )
 async def film_details(
+    user: Annotated[dict, Depends(security)],
     film_id: Annotated[UUID, Path(description='Идентификатор кинопроизведения')],
     film_service: FilmService = Depends(get_film_service)
 ) -> Film:
@@ -67,6 +71,7 @@ async def film_details(
     response_description='Список кинопроизведений с названием и рейтингом',
 )
 async def films(
+    user: Annotated[dict, Depends(security)],
     genre_id: Annotated[UUID | None, Query(description='Идентификатор жанра')] = None,
     sort: Annotated[str, Query(description='Параметр сортировки')] = '-imdb_rating',
     page_size: Annotated[int, Query(description='Размер страницы', ge=1)] = 50,

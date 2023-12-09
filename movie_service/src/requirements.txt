@@ -1,6 +1,6 @@
 redis==4.4.2
 elasticsearch[async]==7.9.1
-fastapi==0.104.0
+fastapi==0.100.1
 pydantic==2.4.2
 pydantic_settings==2.0.3
 uvicorn==0.12.2
@@ -16,3 +16,4 @@ aiohttp
 pydantic_settings
 
 backoff==2.2.1
+PyJWT

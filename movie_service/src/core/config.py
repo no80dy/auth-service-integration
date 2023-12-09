@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     es_genres_index: str = 'genres'
     es_persons_index: str = 'persons'
 
+    jwt_secret_key: str = 'secret'
+    jwt_algorithm: str = 'HS256'
+
 
 settings = Settings()
 

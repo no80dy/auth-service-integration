@@ -27,5 +27,8 @@ class RedisCache(ICache):
     async def set(self, key: str, value: Any, expired_time: int) -> None:
         await self.connection.set(key, value, expired_time)
 
+    async def pipeline(self):
+        return await self.connection.pipeline()
+
     async def close(self):
         await self.connection.close()
