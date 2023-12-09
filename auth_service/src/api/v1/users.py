@@ -180,9 +180,6 @@ async def login(
 
     user_claims = {
         'user_id': str(user.id),
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-        'email': user.email,
         'groups_permissions': await user_service.get_user_groups_permissions(user.id)
     }
 
@@ -293,9 +290,6 @@ async def refresh(
     user = await user_service.get_user_by_user_id(user_id)
     user_claims = {
         'user_id': user_id,
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-        'email': user.email,
         'groups_permissions': await user_service.get_user_groups_permissions(user_id)
     }
 

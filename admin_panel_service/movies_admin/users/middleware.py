@@ -1,11 +1,8 @@
-import http
-
 import jwt
 import requests
 
 from django.contrib.auth import logout
 from django.shortcuts import redirect
-from django.http import HttpResponse
 
 from .settings import settings
 

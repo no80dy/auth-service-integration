@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model
 from .models import Permission, Group
 from .settings import settings
 
+
 User = get_user_model()
 
 
@@ -31,9 +32,6 @@ class CustomBackend(BaseBackend):
         )
         user, created = User.objects.get_or_create(id=decoded_token['user_id'])
         user.username = decoded_token.get('sub')
-        user.first_name = decoded_token.get('first_name')
-        user.last_name = decoded_token.get('last_name')
-        user.email = decoded_token.get('email')
 
         groups = []
         for group_permissions in decoded_token.get('groups_permissions'):

@@ -1,4 +1,3 @@
-import time
 import uuid
 
 from django.db import models
@@ -6,7 +5,6 @@ from django.utils import timezone
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
-    PermissionsMixin,
 )
 from django.utils.translation import gettext_lazy as _
 
@@ -89,9 +87,6 @@ class AbstractCustomBaseUser(AbstractBaseUser):
 
 class CustomUser(AbstractCustomBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    first_name = models.CharField(max_length=256)
-    last_name = models.CharField(max_length=256)
-    email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
 
     def __str__(self):
         return f'{self.username}'

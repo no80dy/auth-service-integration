@@ -2,12 +2,10 @@ import json
 import http
 import requests
 
-from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth import authenticate, get_user_model, password_validation
+from django.contrib.auth import password_validation
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
 
 from .settings import settings
 
@@ -52,26 +50,3 @@ class CustomPasswordChangeFormMyself(forms.Form):
                 code="password_incorrect",
             )
         return self.cleaned_data['old_password']
-
-
-class CustomUserCreationForm(forms.ModelForm):
-    def save(self, commit=True):
-        url = settings.CHANGE_PASSWORD_URL
-        payload = {
-            'username': self.cleaned_data['username'],
-            'password': self.cleaned_data['password'],
-            'repeated_password': self.cleaned_data['password'],
-            'first_name': self.cleaned_data['first_name'],
-            'last_name': self.cleaned_data['last_name'],
-            'email': self.cleaned_data['email']
-        }
-        response = requests.post(url, data=json.dumps(payload), headers={'X-Request-Id': 'auth_service'})
-        if response.status_code != http.HTTPStatus.CREATED:
-            raise ValidationError(
-                response.json(),
-                code="data_incorrect",
-            )
-
-    class Meta:
-        model = get_user_model()
-        fields = ('username', 'password', )

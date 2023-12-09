@@ -266,7 +266,7 @@ class UserService:
                 RefreshSession.is_active.is_(True),
                 ))
             sessions = result.scalars().all()
-            return sessions.count() if len(sessions) > 0 else 0
+            return len(sessions)
         except SQLAlchemyError as e:
             logging.error(e)
 

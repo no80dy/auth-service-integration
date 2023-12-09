@@ -1,14 +1,9 @@
 import requests
 import http
-import json
 
 from django.shortcuts import redirect, render
 from django.contrib.auth import logout
 from django.http import HttpResponse
-from django.contrib.auth.forms import AdminPasswordChangeForm, PasswordChangeForm
-from django.contrib.auth.views import PasswordChangeView
-from django.contrib.auth import update_session_auth_hash
-from django.urls import reverse_lazy
 from .models import CustomUser
 from .forms import CustomPasswordChangeFormMyself
 from .settings import settings
