@@ -418,7 +418,7 @@ async def auth_via_yandex(
 
     user_claims = {
         'user_id': str(user.id),
-        'permissions': await user_service.get_user_permissions(user.id)
+        'groups_permissions': await user_service.get_user_groups_permissions(user.id)
     }
 
     # создаем пару access и refresh токенов
