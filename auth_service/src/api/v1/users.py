@@ -106,11 +106,11 @@ async def create_user(
 
     user_exist = await user_service.check_exist_user(user_dto)
     if not repeated_pass_true or user_exist:
-        raise HTTPException(status_code=400, detail="Некорректное имя пользователя или пароль")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Некорректное имя пользователя или пароль")
 
     user_email_unique = await user_service.check_unique_email(user_dto)
     if not user_email_unique:
-        raise HTTPException(status_code=400, detail="Пользователь с данным email уже зарегистрирован")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Пользователь с данным email уже зарегистрирован")
 
     user = await user_service.create_user(user_dto)
     return user
@@ -137,7 +137,7 @@ async def change_password(
 
         return updated_user
     else:
-        raise HTTPException(status_code=400, detail="Введены некорректные данные")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Введены некорректные данные")
 
 
 @router.post(
