@@ -84,10 +84,12 @@ class UserService:
 
         return user
 
-    async def update_password(self, user_dto):
+    async def update_password(self, user_dto: dict) -> User | bool:
         user = User(**user_dto)
         if (
-                not await self.check_repeated_password(user_dto.get('password'), user_dto.get('repeated_old_password')) or
+                not await self.check_repeated_password(
+                    user_dto.get('password'), user_dto.get('repeated_old_password')
+                ) or
                 not await self._check_old_password(user_dto) or
                 user_dto.get('password') == user_dto.get('new_password')  # старый и новый пароль должны отличаться
         ):
@@ -101,17 +103,16 @@ class UserService:
 
         return user
 
-    async def check_repeated_password(self, password, repeated_password):
-        if not password == repeated_password:
-            return False
-        return True
+    @staticmethod
+    async def check_repeated_password(password: str, repeated_password: str) -> bool:
+        return password == repeated_password
 
-    async def _check_old_password(self, user_dto):
+    async def _check_old_password(self, user_dto: dict) -> bool:
         result = await self.db.execute(select(User).where(User.username == user_dto.get('username')))
         user = result.scalars().first()
         old_pass_verified = check_password_hash(user.password, user_dto.get('password'))
 
-        return True if old_pass_verified else False
+        return bool(old_pass_verified)
 
     async def get_user_by_username(self, username: str) -> User | None:
         """Возвращает пользователя из базы данных по его username, если он есть."""

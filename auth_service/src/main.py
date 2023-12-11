@@ -44,7 +44,8 @@ def configure_tracer() -> None:
     trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
 
-configure_tracer()
+if settings.ENABLE_TRACER:
+    configure_tracer()
 
 
 app = FastAPI(
