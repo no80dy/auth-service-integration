@@ -1,7 +1,6 @@
 commands.txt
 .vscode
 docker-compose.override.yml
-docker-compose.yml
 *_init_database.py
 
 # Byte-compiled / optimized / DLL files
