@@ -99,7 +99,7 @@ services:
   tests:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: integrity/Dockerfile
     depends_on:
       - etl
       - elastic
