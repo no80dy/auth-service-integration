@@ -32,24 +32,6 @@ class AuthorizationChecker:
 		return False
 
 
-# async def required_authorization(
-# 	required_permissons: list[str],
-# 	access_token: str = Depends(security),
-# 	authorize_service: AuthJWT = Depends(),
-# ):
-# 	await authorize_service.jwt_required(token=access_token)
-# 	user_permissions = (await authorize_service.get_raw_jwt())['permissions']
-#
-# 	if '*.*' in user_permissions:
-# 		return True
-#
-# 	for user_permission in user_permissions:
-# 		if user_permission in required_permissons:
-# 			return True
-#
-# 	return False
-
-
 class PermissionClaimsService:
 
 	async def required_permissions(

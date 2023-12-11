@@ -14,5 +14,7 @@ class TestSettings(BaseSettings):
 
 	SERVICE_URL: str = 'http://fastapi:8000'
 
+	ENABLE_TRACER: bool = False
+
 
 test_settings = TestSettings()

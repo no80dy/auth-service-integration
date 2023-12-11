@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = 'postgres'
     POSTGRES_SCHEME: str = 'postgresql+asyncpg'
 
+    ENABLE_TRACER: bool = True
+
 
 settings = Settings()
 

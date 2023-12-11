@@ -106,11 +106,11 @@ async def create_user(
 
     user_exist = await user_service.check_exist_user(user_dto)
     if not repeated_pass_true or user_exist:
-        raise HTTPException(status_code=400, detail="Некорректное имя пользователя или пароль")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Некорректное имя пользователя или пароль")
 
     user_email_unique = await user_service.check_unique_email(user_dto)
     if not user_email_unique:
-        raise HTTPException(status_code=400, detail="Пользователь с данным email уже зарегистрирован")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Пользователь с данным email уже зарегистрирован")
 
     user = await user_service.create_user(user_dto)
     return user
@@ -137,7 +137,7 @@ async def change_password(
 
         return updated_user
     else:
-        raise HTTPException(status_code=400, detail="Введены некорректные данные")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Введены некорректные данные")
 
 
 @router.post(
@@ -360,14 +360,15 @@ oauth.register(
 
 
 @router.get(
-    path='/signin_yandex',
+    path='/signin_social',
     status_code=HTTPStatus.OK,
     summary='Вход пользователя в аккаунт через аккаунт Яндекс',
     description='На основании данных от Яндекс формирует пару access и refresh токенов',
     response_description='Аутентификация пользователя через Яндекс аккаунт'
 )
-async def login_via_yandex(
+async def login_via_social(
         request: Request,
+        social_name: str,
         user_agent: Annotated[str | None, Header()] = None,
 ):
     """Вход пользователя в аккаунт с помощью аккаунта Яндекс."""
@@ -376,8 +377,18 @@ async def login_via_yandex(
             status_code=HTTPStatus.BAD_REQUEST,
             detail='Вы пытаетесь зайти с неизвестного устройства'
         )
-    redirect_uri = request.url_for('auth_via_yandex')
-    return await oauth.yandex.authorize_redirect(request, redirect_uri)
+
+    match social_name:
+        case 'yandex':
+            redirect_uri = request.url_for('auth_via_yandex')
+            return await oauth.yandex.authorize_redirect(request, redirect_uri)
+        case _:
+            return JSONResponse(
+                status_code=HTTPStatus.NOT_FOUND,
+                content={
+                    'detail': 'Неизвестная социальная сеть',
+                }
+            )
 
 
 @router.get('/auth_yandex')
@@ -394,7 +405,7 @@ async def auth_via_yandex(
         social_user = resp.json()
     except httpx.ConnectTimeout as e:
         logging.error(e)
-    logging.info('hey', social_user)
+
     social_id = social_user['id']
     social_name = 'yandex'
 
